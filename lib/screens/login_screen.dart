@@ -1,9 +1,9 @@
+import 'package:constatel/screens/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:constatel/providers/auth_provider.dart';
 import 'package:constatel/widgets/rounded_button.dart';
 import 'package:constatel/screens/sign_phone_number_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'dart:async';
 
@@ -15,72 +15,35 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _phoneController = TextEditingController();
-  final _passController = TextEditingController();
-  String? _userName;
-  bool _isLoggedIn = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    _checkLoginStatus();
   }
 
-  Future<void> _signInAsGuest() async {
-    try {
-      final userId = await AuthProvider().signInAsGuest();
-
-      if (userId != null) {
-        await FirebaseFirestore.instance.collection('users').doc(userId).set({
-          'userId': userId,
-          // Add any other user information you want to save
-        });
-        // Save the user ID to Firebase
-        await AuthProvider().saveUserId(userId);
-        // Navigate to the next screen (MapScreen or HomeScreen)
-        Navigator.push(
+  /// Check if the user is already logged in
+  void _checkLoginStatus() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.currentUser != null) {
+      // Navigate to HomeScreen if already authenticated
+      Future.microtask(() {
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => SignInWithPhoneNumberScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => MapScreen()),
         );
-      } else {
-        // Handle guest sign-in error
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text('Unable to sign in as guest. Please try again.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      // Handle sign-in error
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text(
-              'An error occurred while signing in. Please try again.${e.toString()}'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
+      });
     }
+  }
+
+  /// Sign in using phone number from AuthProvider
+  Future<void> _signInWithPhoneNumber() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SignInWithPhoneNumberScreen(),
+      ),
+    );
   }
 
   @override
@@ -128,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: 'Commencer',
                   color: Colors.white,
                   textColor: Colors.black, // Set the text color to red
-                  onPressed: _signInAsGuest,
+                  onPressed: _signInWithPhoneNumber,
                   widthNumber: 0.4,
                 ),
               ],
